@@ -1,0 +1,205 @@
+\documentclass{article}
+\usepackage{amsmath}
+\title{Divisibility by 3}
+\date{2024\\ June}
+\author{Alexey Kutepov}
+\begin{document}
+\maketitle
+\section{Intro}
+
+In Competitive Programming there is a popular trick to figure out if a
+number is divisible by 3. The number is divisible by 3 if the sum of
+its digits is divisible by 3. Sounds useless, because you can just
+always do \verb|x%3 == 0|, but this only works if \verb|x| is a 64
+bits integer. As soon as you start working with Big Integers (integers
+that don't fit into the CPU registers) you have to do something
+different. And the Divisibility by 3 property is the thing you want to
+do because for a sum of digits to overflow 64 bits the number should
+consist of roughly over $2^{64} \div 9 = 2049638230412172401$ digits
+which may require roughly 2 exabytes to store in memory (if we
+allocate 1 byte per digit, you can do better but that won't help much)
+so usually the limitations of the Competitive Programming problems
+don't go that far (because the automatic judge systems usually
+physically can't handle such large numbers too).
+
+I always wondered why this property of integers even worked in the
+first place. So I decided to prove it. And this article is my proof of
+this property. There are many other proofs online, but I intentionally
+didn't look into them, because I wanted to discover it myself to
+expand my understand of the matter.
+
+\section{The $\%$ Operator}
+
+Since I'm not a mathematician I'm not gonna be using the usual mathy
+Modular Arithmetic notation (primarily because after staring at the
+Wikipedia article for several hours I still don't understand it). As a
+Computer Programmer I'm gonna be using what is used in the majority of
+Programming Languages on planet Earth: the $\%$ operator. Yes, I'm
+gonna be literally using $\%$ throughout this article in the same
+manner it is used in Programming Languages. If you don't like it,
+that's your problem.
+
+To effectively use the $\%$ operator we shall define it. Given
+Positive ($\ge 1$) integers $a$, $b$ and $c$, where $c < b$, $a\%b =
+c$ means that there is such Natural ($\ge 0$) integer $k$ that
+
+\begin{equation} \label{eq:mod-def}
+  k \cdot b + c = a
+\end{equation}
+
+What it basically means is the number $a$ consists
+of $k$ ``chunks'' of size $b$ plus a smaller remainder of size
+$c$. The $\%$ operator enables you to extract that smaller remainder
+$c$ out of $a$ given the size of the ``chunk'' $b$. If you want to
+know how many chunks of size $b$ you have inside of $a$ ignoring the
+remainder $c$ you can just use the integer division $\lfloor a \div b
+\rfloor = k$.
+
+%% TODO: it would be nice to have a picture of $a$ consisting of $k$
+%% chunks of size $b$ plus remainder $c$
+
+\section{Divisibility by 3 in Terms of the $\%$ Operator}
+
+Given the definition above we can say that $a$ is divisible by $3$
+when $a\%3 = 0$.
+
+Let us have a Natural integer $n$ consisting of $m$ digits in base
+10. So we can spell it like $d_md_{m-1}\dots d_{2}d_{1}$. We can
+define the number $n$ in terms of its digits as the following sum:
+
+\begin{align*}
+  \sum_{i=1}^{m}d_i\cdot 10^{i-1}
+\end{align*}
+
+Which enables us to reformulate the Divisibility by 3 property like so
+
+\begin{align} \label{eq:original-div-by-3}
+  \left(\sum_{i=1}^{m}d_i\right)\%3 = 0 \implies \left(\sum_{i=1}^{m}d_i\cdot 10^{i-1}\right)\%3 = 0
+\end{align}
+
+Writting it like this gives us a pretty interesting hypothesis. What
+if the actual property here is
+
+\begin{align} \label{eq:interesting-div-by-3}
+  \left(\sum_{i=1}^{m}d_i\right)\%3 = \left(\sum_{i=1}^{m}d_i\cdot 10^{i-1}\right)\%3
+\end{align}
+
+Proving (\ref{eq:interesting-div-by-3}) would imply proving (\ref{eq:original-div-by-3}) so let's just focus on exploring (\ref{eq:interesting-div-by-3}).
+
+\section{$\%$-s can be nested in sums}
+
+One useful property of $\%$ that will help us in our exploration can be defined as following
+
+\begin{align} \label{eq:nest-mod}
+  (a + b)\%c = (a\%c + b\%c)\%c
+\end{align}
+
+Using the definition of $\%$ operator (\ref{eq:mod-def}) we can say that
+
+\begin{align*}
+  a &= k_a\cdot c + a\%c \\
+  b &= k_b\cdot c + b\%c
+\end{align*}
+
+Now let's take $(a + b)\%c$ and do a few substitutions
+
+\begin{align*}
+  (a + b)\%c
+      &= (k_a\cdot c + a\%c + k_b\cdot c + b\%c)\%c \\
+      &= ((k_a + k_b)\cdot c + a\%c + b\%c)\%c
+\end{align*}
+
+According to (\ref{eq:mod-def}) it doesn't really matter what $k_a +
+k_b$ is equal to (as along as it's $\ge 0$) the result of $((k_a +
+k_b)\cdot c + a\%c + b\%c)\%c$ will be the same even if $k_a + k_b =
+0$.
+
+\begin{align*}
+  (a + b)\%c = ((k_a + k_b)\cdot c + a\%c + b\%c)\%c = (a\%c + b\%c)\%c
+\end{align*}
+
+QED.
+
+\section{$\times$10 does not affect Divisibility by 3}
+
+Equality (\ref{eq:interesting-div-by-3}) hints us that
+
+\begin{align} \label{eq:remove-10}
+  (a \cdot 10)\%3 = a\%3
+\end{align}
+
+You can view $a \cdot 10$ as a sum
+
+\begin{align*}
+  a \cdot 10 = \sum_{i=1}^{10}a
+\end{align*}
+
+And using (\ref{eq:nest-mod}) we can say
+
+\begin{align*}
+  (a \cdot 10)\%3 = \left(\sum_{i=1}^{10}a\right)\%3 = \left(\sum_{i=1}^{10}a\%3\right)\%3
+\end{align*}
+
+Since there are only 3 possible values of $a\%3$ ($0$, $1$ and $2$) we can just check all of them.
+
+If $a\%3 = 0$
+
+\begin{align*}
+    (a \cdot 10)\%3 = \left(\sum_{i=1}^{10}a\%3\right)\%3 = \left(\sum_{i=1}^{10}0\right)\%3 = 0
+\end{align*}
+
+If $a\%3 = 1$
+
+\begin{align*}
+    (a \cdot 10)\%3 = \left(\sum_{i=1}^{10}a\%3\right)\%3 = \left(\sum_{i=1}^{10}1\right)\%3 = 10\%3 = 1
+\end{align*}
+
+If $a\%3 = 2$
+
+\begin{align*}
+    (a \cdot 10)\%3 = \left(\sum_{i=1}^{10}a\%3\right)\%3 = \left(\sum_{i=1}^{10}2\right)\%3 = 20\%3 = 2
+\end{align*}
+
+QED.
+
+\section{Proof}
+
+Let's take the definition of $n$ in terms of its digits from
+(\ref{eq:interesting-div-by-3})
+
+\begin{align*}
+  \left(\sum_{i=1}^{m}d_i\cdot 10^{i-1}\right)\%3
+\end{align*}
+
+Let's apply (\ref{eq:nest-mod})
+
+\begin{align*}
+  \left(\sum_{i=1}^{m}(d_i\cdot 10^{i-1})\%3\right)\%3
+\end{align*}
+
+By continuesly applying (\ref{eq:remove-10}) we get
+
+\begin{align*}
+  \left(\sum_{i=1}^{m}d_i\%3\right)\%3
+\end{align*}
+
+By applying (\ref{eq:nest-mod}) in reverse we get
+
+\begin{align*}
+  \left(\sum_{i=1}^{m}d_i\right)\%3
+\end{align*}
+
+QED.
+
+\section{Conclusion}
+
+I think the main reason this property works in the first place is
+because of (\ref{eq:remove-10}). You can even view
+(\ref{eq:remove-10}) as sort of the essence (the core) of the
+Divisibility by 3 property which I find pretty insightful.
+
+Maybe this proof is silly and verbose compared to the other proofs out
+there. I don't actually know, because I never looked into them. I'm
+also not a mathematician.
+
+\end{document}
